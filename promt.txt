@@ -1,3 +1,32 @@
+
+kiểm tra code bên dưới có đáp ứng các yêu cầu sau? Nếu không hãy chỉnh code:
+- Thêm vào chức năng parse chú thích đầu file và nhét vào định dạng doxygen
+- Nếu không tìn thấy doxygen chính thống nào thì bypass cái comment đó, không được xoá
+- Xoá các xuống dòng phía sau đoạn comment doxygen
+- Comment rất ngắn gọn, tiếng anh, doxygen, không tiếng việt
+- Chỉ chỉnh sửa, các hàm có sẵn, không thêm bớt!
+- Chức năng parse Definition: hoặc hàm nếu không có Definition:
+- Xử lý kỹ các dấu xuống dòng, các indent để không thêm dư thừa. Lúc lấy đoạn comment từ input nếu có xóa thì phải ghi nhớ, sau khi generate doxygen comment thì phải trả lại toàn vẹn!
+Ví dụ:
+```
+*=====================================================================================================================================
+Definition: void the_function(uint8 the_param1, uint16* the_param2 )
+Input Parameter: ADC grp number
+Output Parameter: ADC values for corresponding group
+Description: This function does the updates all the adc in a given group with the selected Diag sel line combination.
+=======================================================================================================================================
+```
+
+Mong đợi các parametter sẽ được convert ra luôn (tức là lấy Input Parameter: ADC grp number làm chú thích chung cho cả 2):
+
+```
+/// @brief the_param1 ADC grp number
+/// @brief the_param2 ADC grp number
+```
+- Phải so sánh định nghĩa hàm có đủ với số paramtter không, nếu k có đủ thì tức là chsu thích dùng chung!
+
+CODE CŨ (__convert.hpp): 
+```
 #include <bits/stdc++.h>
 #include <filesystem> 
 #include <algorithm>
@@ -91,8 +120,7 @@ int parseBoschComent(string s, string &brief, vector<string> &param, string &ret
 
     auto is_separator = [&](const string& line) -> bool {
         long countEq = count(line.begin(), line.end(), '=');
-        long countAst = count(line.begin(), line.end(), '*');
-        return (countEq > maxEqualSymNum) || (countAst > 10); // Handle ****** lines too
+        return countEq > maxEqualSymNum;
     };
 
     auto clean_line = [&](string t) -> string {
@@ -109,7 +137,7 @@ int parseBoschComent(string s, string &brief, vector<string> &param, string &ret
         return t.substr(first, (last - first + 1));
     };
 
-    // Lambda to extract parameter names from "void func(const uint8_t* data, int len)"
+    // Lambda to extract parameter names from "void func(int a, float *b)"
     auto extract_params = [&](string defLine) {
         size_t openP = defLine.find('(');
         size_t closeP = defLine.find(')');
@@ -118,23 +146,17 @@ int parseBoschComent(string s, string &brief, vector<string> &param, string &ret
             stringstream ssArg(args);
             string segment;
             while (getline(ssArg, segment, ',')) {
+                // Get last token of the segment (variable name)
                 string token, lastToken;
                 stringstream ssToken(segment);
-                // Iterate tokens to find variable name (usually the last one)
-                while (ssToken >> token) {
-                    // Skip keywords
-                    if (token == "const" || token == "volatile" || token == "struct" || token == "enum") continue;
-                    lastToken = token;
-                }
+                while (ssToken >> token) lastToken = token;
                 
-                // Cleanup pointer/ref/array chars from name: * & [ ]
-                string cleanToken;
-                for (char c : lastToken) {
-                    if (c != '*' && c != '&' && c != '[' && c != ']') cleanToken += c;
-                }
+                // Cleanup pointer chars like * or & from name
+                lastToken.erase(remove(lastToken.begin(), lastToken.end(), '*'), lastToken.end());
+                lastToken.erase(remove(lastToken.begin(), lastToken.end(), '&'), lastToken.end());
                 
-                if (!cleanToken.empty() && cleanToken != "void") {
-                    extractedParams.push_back(cleanToken);
+                if (!lastToken.empty() && lastToken != "void") {
+                    extractedParams.push_back(lastToken);
                 }
             }
         }
@@ -171,17 +193,18 @@ int parseBoschComent(string s, string &brief, vector<string> &param, string &ret
         }
 
         // --- 2. FUNCTION TAG DETECTION ---
+        bool sectionChanged = false;
         if (line.find(pat_def) != string::npos) {
-            currentSection = 1;
+            currentSection = 1; sectionChanged = true;
             line = line.substr(line.find(pat_def) + pat_def.length());
         } else if (line.find(pat_in) != string::npos) {
-            currentSection = 2;
+            currentSection = 2; sectionChanged = true;
             line = line.substr(line.find(pat_in) + pat_in.length());
         } else if (line.find(pat_out) != string::npos) {
-            currentSection = 3;
+            currentSection = 3; sectionChanged = true;
             line = line.substr(line.find(pat_out) + pat_out.length());
         } else if (line.find(pat_desc) != string::npos) {
-            currentSection = 4;
+            currentSection = 4; sectionChanged = true;
             line = line.substr(line.find(pat_desc) + pat_desc.length());
         }
 
@@ -192,9 +215,9 @@ int parseBoschComent(string s, string &brief, vector<string> &param, string &ret
         switch (currentSection) {
             case 1: // Definition
             {
-                // Extract params immediately from definition line
+                // We found a definition line, extract params immediately
                 extract_params(content); 
-                // Definition line itself is metadata, not "Others" noise
+                // Do NOT mark as MASK_OTHERS, this is valid metadata
                 break; 
             }
             case 2: // Input
@@ -207,7 +230,8 @@ int parseBoschComent(string s, string &brief, vector<string> &param, string &ret
                     param.push_back("/// @param " + pName + " " + pDesc);
                     foundMask |= MASK_PARAM;
                 } else {
-                    // No separator found. Treat as generic desc if valid text
+                    // No separator found. 
+                    // If content isn't "None" or "void", treat as generic desc or param name without desc
                     if (content != "None" && content != "void") {
                          if (genericInputDesc.empty()) genericInputDesc = content;
                          else genericInputDesc += " " + content;
@@ -238,16 +262,12 @@ int parseBoschComent(string s, string &brief, vector<string> &param, string &ret
     }
 
     // --- 4. POST PROCESSING: FILL GENERIC PARAMS ---
-    // Logic: If we found params in definition but they weren't documented specifically,
-    // apply the generic description found in Input section.
     if (!extractedParams.empty() && !genericInputDesc.empty()) {
         for (const string& pName : extractedParams) {
-            bool alreadyExists = false;
             // Check if this param was already documented specifically
-            // Use " " after pName to ensure we match whole word (e.g. 'val' vs 'value')
-            string searchTag = "@param " + pName + " "; 
+            bool alreadyExists = false;
             for (const string& pTag : param) {
-                if (pTag.find(searchTag) != string::npos) {
+                if (pTag.find("@param " + pName) != string::npos) {
                     alreadyExists = true;
                     break;
                 }
@@ -296,7 +316,7 @@ Status Convert(string finPath, string foutPath) {
                 if (c == '/' && buffer.size() >= 2 && buffer[buffer.size()-2] == '/') {
                     buffer.pop_back(); buffer.pop_back(); 
                     
-                    // Capture Indent: Find the last newline to get pure indentation of current line
+                    // Capture Indent
                     indent.clear();
                     size_t last_nl = buffer.find_last_of('\n');
                     size_t start = (last_nl == string::npos) ? 0 : last_nl + 1;
@@ -339,13 +359,13 @@ Status Convert(string finPath, string foutPath) {
                         if (retMask & MASK_PARAM) { for (const auto& p : doxygenParam) { foutWriteBuffer(indent); foutWriteBuffer(p); foutWriteChar('\n'); } }
                         if (retMask & MASK_RET)   { foutWriteBuffer(indent); foutWriteBuffer(doxygenReturn); foutWriteChar('\n'); }
                         
-                        // Eat newlines after Doxygen block (Requirement: Remove trailing newlines)
+                        // Eat newlines after Doxygen block
                         while (!finIsEOF()) {
                             int next_c = fin.peek();
                             if (next_c == '\n' || next_c == '\r') finReadChar(); else break; 
                         }
                     } else {
-                        // Bypass (keep original) - Restore //
+                        // Bypass (keep original)
                         foutWriteBuffer(indent); foutWriteBuffer("//"); foutWriteBuffer(buffer); foutWriteChar('\n'); 
                     }
 
@@ -373,7 +393,7 @@ Status Convert(string finPath, string foutPath) {
                             if (next_c == '\n' || next_c == '\r') finReadChar(); else break; 
                         }
                     } else {
-                        // Bypass (keep original) - Restore /* */
+                        // Bypass (keep original)
                         foutWriteBuffer(indent); foutWriteBuffer("/*"); foutWriteBuffer(buffer); foutWriteBuffer("*/"); 
                     }
 
@@ -406,3 +426,4 @@ void convertFromFilenameList(){
          Convert(concat(INPUT_ROOTDIR, filename), outFile);
     }
 }
+```
