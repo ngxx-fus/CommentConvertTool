@@ -1,3 +1,6 @@
+#ifndef __CONVERT_CONFIG_H__
+#define __CONVERT_CONFIG_H__
+
 #include "__convertGlobalUtil.hpp"
 
 // --- Global Configuration Variables (Mutable) ---
@@ -90,3 +93,6 @@ void loadConfig(const string& path) {
     finClose();
     cout << "[INFO] Configuration loaded from " << path << "\n";
 }
+
+
+#endif

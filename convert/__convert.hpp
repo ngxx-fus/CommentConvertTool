@@ -1,3 +1,6 @@
+#ifndef __CONVERT_H__
+#define __CONVERT_H__
+
 #include <bits/stdc++.h>
 #include <filesystem> 
 #include <algorithm>
@@ -69,12 +72,12 @@ int parseBoschComent(string s, string &brief, vector<string> &param, string &ret
     const int maxEqualSymNum = 3;
     
     // Function Patterns
-    const string pat_def    = "Definition:";
-    const string pat_desc   = "Description:";
-    const string pat_in     = "Input Parameter:";
-    const string pat_in_div = "--";
-    const string pat_out    = "Output Parameter:";
-    
+    const string pat_def    = pattern_definition;
+    const string pat_desc   = pattern_description;
+    const string pat_in     = pattern_input_param;
+    const string pat_in_div = pattern_input_param_delimiter;
+    const string pat_out    = pattern_output_param;
+
     // File Header Patterns
     const string pat_file1  = "File:";
     const string pat_file2  = "Filename:";
@@ -406,3 +409,5 @@ void convertFromFilenameList(){
          Convert(concat(INPUT_ROOTDIR, filename), outFile);
     }
 }
+
+#endif

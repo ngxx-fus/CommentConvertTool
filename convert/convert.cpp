@@ -1,7 +1,5 @@
 #include "__convert.hpp"
 
-
-
 int main(){
     printf("Hello from foo!\n");
     loadConfig("config.txt");
