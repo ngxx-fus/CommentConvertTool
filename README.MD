@@ -23,6 +23,7 @@ to the doxygen comment like:
 ### Directory tree
 
 ```
+.                           <----- Current directory/rootdir (*)
 +---.vscode
 +---convert                 <----- The tool
 +---input                   <----- Input file(s) (.h, .c)
@@ -59,3 +60,5 @@ The command below will run the tool:
 ```pwsh
 ./convert/run.bat
 ```
+
+Note that: The comment run at Current directory (*). And the `convert.exe` will generate in the Current directory (*).
