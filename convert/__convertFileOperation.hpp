@@ -1,3 +1,6 @@
+#ifndef __CONVERT_FILEOP_H__
+#define __CONVERT_FILEOP_H__
+
 #include <bits/stdc++.h>
 #include <filesystem>
 #include <fstream>
@@ -78,3 +81,6 @@ Status foutClose() {
     }
     return STATUS_OKE;
 }
+
+
+#endif

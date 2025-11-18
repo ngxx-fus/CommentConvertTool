@@ -4,6 +4,7 @@
 
 int main(){
     printf("Hello from foo!\n");
+    loadConfig("config.txt");
     Print_Info();
     convertFromInputDir();
     // convertFromFilenameList();

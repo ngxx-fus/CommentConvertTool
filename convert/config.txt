@@ -1,0 +1,11 @@
+INPUT_ROOTDIR                       = ./input/
+OUTPUT_ROOTDIR                      = ./output/
+pattern_definition                  = Definition:
+pattern_description                 = Description:
+pattern_input_param                 = Input Parameter:
+pattern_input_param_delimiter       = --
+pattern_output_param                = Output Parameter:
+pattern_output_param_delimiter      = --
+prefix_brief                        = /// @brief 
+prefix_param                        = /// @param 
+prefix_return                       = /// @return 

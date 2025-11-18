@@ -18,3 +18,44 @@ to the doxygen comment like:
 /// @param the_param2 Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 /// @return Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 ```
+## Usage
+
+### Directory tree
+
+```
++---.vscode
++---convert                 <----- The tool
++---input                   <----- Input file(s) (.h, .c)
+|   +---Header_files
+|   +---html
+|   |   \---search
+|   \---latex
+\---output                  <----- Output file(s)
+    +---Header_files
+    +---html
+    |   \---search
+    \---latex
+```
+
+### Build and run
+
+Which the config:
+
+```
+INPUT_ROOTDIR                       = ./input/
+OUTPUT_ROOTDIR                      = ./output/
+pattern_definition                  = Definition:
+pattern_description                 = Description:
+pattern_input_param                 = Input Parameter:
+pattern_input_param_delimiter       = --
+pattern_output_param                = Output Parameter:
+pattern_output_param_delimiter      = --
+prefix_brief                        = /// @brief 
+prefix_param                        = /// @param 
+prefix_return                       = /// @return 
+```
+The command below will run the tool:
+
+```pwsh
+./convert/run.bat
+```
