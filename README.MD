@@ -61,4 +61,4 @@ The command below will run the tool:
 ./convert/run.bat
 ```
 
-Note that: The comment run at Current directory (*). And the `convert.exe` will generate in the Current directory (*).
+Note that: The comment run at Current directory (\*). And the `convert.exe` will generate in the Current directory (\*).
